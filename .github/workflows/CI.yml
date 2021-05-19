@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v2
+
+    - name: Download APK
+      run: |
+        curl -c ./cookie -s -L "https://drive.google.com/uc?export=download&id=${{secrets.FILE_ID}}" > /dev/null
+        curl -Lb ./cookie "https://drive.google.com/uc?export=download&confirm=`awk '/download/ {print $NF}' ./cookie`&id=${{secrets.FILE_ID}}" -o apk.zip
+
+    - name: Unzip APK
+      run: unzip apk.zip
+
+    - name: Use Node.js 14
+      uses: actions/setup-node@v2
+      with:
+        node-version: 14
+
+    - name: NPM Install
+      run: npm i
+
+    - name: Deploy Node.js
+      run: npm start
+
+    - name: Upload Files (JSON)
+      uses: 'actions/upload-artifact@v2'
+      with:
+        name: artifact_json
+        path: |
+          assets/csv/*.json
+          assets/logic/*.json
+          assets/localization/*.json
+
+    - name: Use Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+
+    - name: Copy Files
+      run: cp -r assets/sc In-Compressed
+
+    - name: PIP Install
+      run: pip install -r requirements.txt
+
+    - name: Deploy Python
+      run: python main.py
+
+    - name: Zip Files
+      run: zip assets.zip Out-Sprites/**/*.png
+
+    - name: Upload Files (PNG)
+      uses: 'actions/upload-artifact@v2'
+      with:
+        name: artifact_png
+        path: assets.zip
